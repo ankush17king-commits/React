@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ReactRoom – record meme reactions together</title>
+<style>
+:root{--bg:#0f172a;--card:rgba(30,41,59,0.7);--btn:rgba(255,255,255,0.1);--btn2:rgba(255,255,255,0.2);--ac:#38bdf8;--blue:#2563eb;--fg:#f8fafc;--mut:#94a3b8;--red:#ef4444;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;transition:all 0.2s ease;}[hidden]{display:none!important}
+body{margin:0;background:radial-gradient(circle at top left, #1e293b, var(--bg));min-height:100vh;color:var(--fg);font:15px "Inter", "Google Sans", Roboto, system-ui, sans-serif}
+button{font:inherit;color:inherit;cursor:pointer;border:0;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.pill{border-radius:99px;padding:12px 28px;font-weight:600;background:linear-gradient(135deg, #3b82f6, #2563eb);color:#fff;box-shadow: 0 4px 14px rgba(37,99,235,0.3)}
+.pill.o{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--fg);box-shadow:none}
+.pill:hover{transform:translateY(-2px);filter:brightness(1.1)}
+header{display:flex;justify-content:space-between;align-items:center;padding:20px 32px;font-size:22px;background:rgba(15,23,42,0.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.05)}
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;max-width:1200px;margin:6vh auto;padding:0 32px}
+h1{font-size:clamp(36px,5vw,56px);font-weight:700;line-height:1.1;margin:0 0 16px;background:linear-gradient(to right, #fff, #94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{color:var(--mut);font-size:18px;max-width:480px;line-height:1.6}
+.mock{aspect-ratio:16/9;border-radius:24px;background:linear-gradient(135deg,#1e1b4b,#064e3b);position:relative;box-shadow:0 30px 60px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1)}
+.mock i{position:absolute;border-radius:50%;background:linear-gradient(135deg, #38bdf8, #818cf8);border:4px solid rgba(255,255,255,0.2)}
+.mock b{position:absolute;right:16px;top:16px;font-size:32px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.3))}
+.feat{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:1200px;margin:0 auto 60px;padding:0 32px}
+.feat div{background:var(--card);border-radius:20px;padding:24px;color:var(--mut);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.05);box-shadow:0 8px 32px rgba(0,0,0,0.2)}
+.feat b{color:var(--fg);display:block;margin-bottom:8px;font-size:16px;font-weight:600}
+#room{height:100dvh;display:flex;flex-direction:column;padding:12px 12px 0}
+#stage{width:min(100%,calc((100dvh - 130px)*16/9));margin:auto}
+canvas{width:100%;display:block;border-radius:14px;background:#000;touch-action:none;box-shadow:0 10px 40px rgba(0,0,0,0.6)}
+#bar{height:84px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(15,23,42,0.6);backdrop-filter:blur(12px);border-radius:24px;margin-bottom:12px;padding:0 24px;border:1px solid rgba(255,255,255,0.05)}
+#bar .l,#bar .r{flex:1;color:var(--mut);display:flex;gap:10px;align-items:center}#bar .r{justify-content:flex-end}
+#bar .c{display:flex;gap:10px}
+.ib{width:48px;height:48px;border-radius:50%;background:var(--btn);font-size:20px;display:grid;place-items:center;box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+.ib:hover{background:var(--btn2);transform:scale(1.05)}.ib.on{background:var(--ac);color:#0f172a}.ib.off{background:var(--red)}
+#rec.on{background:var(--red);animation:pl 1.2s infinite}@keyframes pl{50%{box-shadow:0 0 0 8px rgba(239,68,68,0.4)}}
+#lv{width:64px;border-radius:24px;background:var(--red);box-shadow:0 4px 12px rgba(239,68,68,0.4)}
+.pop{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:var(--card);border-radius:16px;padding:16px;display:none;gap:8px;flex-wrap:wrap;justify-content:center;max-width:min(94vw,520px);box-shadow:0 16px 40px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(16px);z-index:5}
+.pop.open{display:flex}.pop button{background:var(--btn);border-radius:18px;padding:8px 16px;font-weight:500}.pop button:hover{background:var(--btn2)}
+#rx button{font-size:24px;padding:6px 12px}
+#pn{position:fixed;right:24px;top:24px;bottom:108px;width:min(360px,calc(100vw - 48px));background:var(--card);border-radius:20px;padding:24px;overflow:auto;display:none;z-index:4;box-shadow:0 16px 40px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(16px)}
+#pn.open{display:block}#pn h3{margin:0 0 12px;font-weight:600;font-size:18px}#pn ol{color:var(--mut);padding-left:20px;line-height:1.6}
+#pn .row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}#pn button{background:var(--btn);border-radius:16px;padding:8px 16px;font-weight:500}
+textarea{width:100%;height:60px;background:rgba(0,0,0,0.3);color:var(--fg);border:1px solid rgba(255,255,255,0.1);border-radius:12px;font:12px monospace;margin:6px 0;padding:8px;resize:none}
+textarea:focus{outline:none;border-color:var(--ac)}
+video{max-width:100%;border-radius:10px}small{color:var(--mut)}
+@media(max-width:760px){.hero,.feat{grid-template-columns:1fr}#bar .l,#bar .r span{display:none}#bar .c{gap:6px}.ib{width:42px;height:42px}#bar{padding:0 12px}header{padding:16px}}
+</style></head><body>
+<div id="home">
+<header><span>🎬 <b>ReactRoom</b></span><small>Meme-reaction studio</small></header>
+<div class="hero"><div><h1>Record meme reactions together, in real time</h1>
+<p>Video calls built for creators: drag your faces anywhere, share a meme tab with sound, add filters and reactions, and record exactly what you see.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px"><button class="pill" id="nw">📹 New room</button><button class="pill o" id="jn">Join with a code</button></div></div>
+<div class="mock"><b>😂</b><i style="width:22%;aspect-ratio:1;left:6%;bottom:8%"></i><i style="width:22%;aspect-ratio:1;right:6%;bottom:8%;background:#f28b82"></i></div></div>
+<div class="feat"><div><b>Draggable faces</b>Place and resize each tile, then record that layout.</div><div><b>Screen + tab audio</b>Play the meme, react live, both hear it.</div><div><b>Filters &amp; reactions</b>Blur, invert, deep fry and floating emojis.</div></div>
+</div>
+<div id="room" hidden>
+<div id="stage"><canvas id="cv" width="1280" height="720"></canvas></div>
+<div id="bar"><div class="l"><span id="clk"></span>|<span>ReactRoom</span><span id="st">not connected</span></div>
+<div class="c"><button class="ib" id="mic" title="Mic on/off">🎤</button><button class="ib" id="cam" title="Camera on/off">📷</button><button class="ib" id="scr" title="Share screen or tab">🖥️</button><button class="ib" data-pop="rx" title="Reactions">😀</button><button class="ib" data-pop="fx" title="Filters &amp; tile">✨</button><button class="ib" id="rec" title="Record">⏺</button><button class="ib" id="lv" title="Leave">📞</button></div>
+<div class="r"><button class="ib" data-pop-panel onclick="document.querySelector('#pn').classList.toggle('open')" title="Connection &amp; recordings">👥</button></div></div>
+<div class="pop" id="rx"></div>
+<div class="pop" id="fx"><div id="fl" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;width:100%"><small style="width:100%;text-align:center">Click a face first, then pick a filter</small></div>
+<small>Size</small><input type="range" id="sz" min="120" max="1280" value="600"><button id="rd">Circle / Rect</button></div>
+<div id="pn"><h3>Connect with your friend</h3>
+<ol><li>Host: click <b>Make invite</b> and send your code.</li><li>Friend: paste it below, click <b>Join</b>, send their code back.</li><li>Host: paste the reply, click <b>Connect</b>.</li></ol>
+<div class="row"><button id="host">Make invite</button><button id="join">Join</button><button id="conn">Connect</button></div>
+<small>Paste code here</small><textarea id="in"></textarea><small>Your code</small><textarea id="out" readonly></textarea>
+<label><input type="checkbox" id="raw"> Also save raw tracks (me / friend)</label>
+<h3 style="margin-top:16px">Recordings</h3><div id="clips"><small>Finished recordings appear here.</small></div></div>
+<audio id="a1" autoplay></audio><audio id="a2" autoplay></audio>
+</div>
+<script>
+const $=s=>document.querySelector(s),cv=$('#cv'),cx=cv.getContext('2d');
+const mk=()=>{const v=document.createElement('video');v.autoplay=v.playsInline=v.muted=true;return v};
+const vid={me:mk(),fr:mk(),scr:mk()};
+let me,remote,screenL,pc,dc,isHost=false,making=false,sel=null,drag=null,recs=[],fl=[];
+const T=[{k:'me',n:'Me',x:20,y:150,s:600,f:'none',r:0},{k:'fr',n:'Friend',x:660,y:150,s:600,f:'none',r:0}];
+const send=o=>{try{dc&&dc.readyState=='open'&&dc.send(JSON.stringify(o))}catch{}};
+function layout(on){const[a,b]=T.filter(t=>1).sort((p,q)=>p.k<q.k?1:-1);const m=T.find(t=>t.k=='me'),f=T.find(t=>t.k=='fr');
+ if(on){Object.assign(m,{x:20,y:480,s:380,r:1});Object.assign(f,{x:880,y:480,s:380,r:1})}
+ else{Object.assign(m,{x:20,y:150,s:600,r:0});Object.assign(f,{x:660,y:150,s:600,r:0})}}
+function cover(v,x,y,w,h){const vw=v.videoWidth,vh=v.videoHeight;if(!vw){cx.fillStyle='#3c4043';cx.fillRect(x,y,w,h);return}
+ const k=Math.max(w/vw,h/vh),sw=w/k,sh=h/k;cx.drawImage(v,(vw-sw)/2,(vh-sh)/2,sw,sh,x,y,w,h)}
+function draw(){
+ cx.filter='none';cx.fillStyle='#202124';cx.fillRect(0,0,1280,720);
+ const s=vid.scr;if(s.srcObject&&s.videoWidth){const k=Math.min(1280/s.videoWidth,720/s.videoHeight),w=s.videoWidth*k,h=s.videoHeight*k;cx.drawImage(s,(1280-w)/2,(720-h)/2,w,h)}
+ for(const t of T){const h=t.s*9/16;cx.save();cx.filter=t.f;cx.beginPath();
+  if(t.r){cx.arc(t.x+t.s/2,t.y+h/2,h/2,0,7);cx.clip();cover(vid[t.k],t.x+t.s/2-h/2,t.y,h,h)}
+  else{cx.roundRect(t.x,t.y,t.s,h,16);cx.clip();cover(vid[t.k],t.x,t.y,t.s,h)}
+  cx.restore();
+  if(t===sel&&!recs.length){cx.strokeStyle='#8ab4f8';cx.lineWidth=4;cx.beginPath();t.r?cx.arc(t.x+t.s/2,t.y+h/2,h/2,0,7):cx.roundRect(t.x,t.y,t.s,h,16);cx.stroke()}}
+ const now=Date.now();fl=fl.filter(o=>now-o.t<2500);cx.font='90px serif';cx.textAlign='center';
+ for(const o of fl){const p=(now-o.t)/2500;cx.globalAlpha=1-p*p;cx.fillText(o.e,o.x,700-p*560)}cx.globalAlpha=1}
+setInterval(draw,33);
+const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*1280/r.width,(e.clientY-r.top)*720/r.height]};
+const hit=(x,y)=>[...T].reverse().find(t=>{const h=t.s*9/16;return t.r?Math.hypot(x-t.x-t.s/2,y-t.y-h/2)<h/2:x>t.x&&x<t.x+t.s&&y>t.y&&y<t.y+h});
+cv.onpointerdown=e=>{const[x,y]=pt(e),t=hit(x,y);sel=t||null;if(t){drag=[x-t.x,y-t.y];T.push(T.splice(T.indexOf(t),1)[0]);cv.setPointerCapture(e.pointerId);$('#sz').value=t.s}};
+cv.onpointermove=e=>{if(drag&&sel){const[x,y]=pt(e);sel.x=x-drag[0];sel.y=y-drag[1]}};
+cv.onpointerup=()=>drag=null;
+cv.onwheel=e=>{if(sel){e.preventDefault();sel.s=Math.max(120,Math.min(1280,sel.s*(e.deltaY<0?1.06:.94)));$('#sz').value=sel.s}};
+$('#sz').oninput=e=>{if(sel)sel.s=+e.target.value};
+$('#rd').onclick=()=>{if(sel)sel.r^=1};
+[['None','none'],['Blur','blur(10px)'],['Invert','invert(1)'],['B&W','grayscale(1)'],['Sepia','sepia(1)'],['Trippy','hue-rotate(90deg) saturate(2)'],['Deep fry','contrast(1.8) saturate(3)']].forEach(([n,f])=>{
+ const b=document.createElement('button');b.textContent=n;b.onclick=()=>{const t=sel||T.find(t=>t.k=='me');t.f=f};$('#fl').append(b)});
+function rx(e,x){fl.push({e,x:x||200+Math.random()*880,t:Date.now()})}
+['😂','💀','🔥','😱','👏','🤡','😭','🤨'].forEach(e=>{const b=document.createElement('button');b.textContent=e;b.onclick=()=>{const x=200+Math.random()*880;rx(e,x);send({rx:e,x})};$('#rx').append(b)});
+async function cam(){if(me)return;try{me=await navigator.mediaDevices.getUserMedia({video:{width:1280,height:720,frameRate:30},audio:{echoCancellation:true,noiseSuppression:true}});vid.me.srcObject=me;vid.me.play().catch(e=>console.warn(e));$('#cam').classList.remove('off')}catch(e){alert('Camera/mic blocked: '+e.message+'\nIf this preview blocks it, open the page link in its own browser tab.');throw e}}
+$('#cam').onclick=()=>{if(!me)return cam();const t=me.getVideoTracks()[0];t.enabled=!t.enabled;$('#cam').classList.toggle('off',!t.enabled)};$('#mic').onclick=()=>{if(!me)return;const t=me.getAudioTracks()[0];t.enabled=!t.enabled;$('#mic').classList.toggle('off',!t.enabled)};
+const gathered=()=>new Promise(r=>{if(pc.iceGatheringState=='complete')return r();pc.onicegatheringstatechange=()=>pc.iceGatheringState=='complete'&&r();setTimeout(r,4000)});
+const enc=d=>btoa(JSON.stringify(d)),dec=s=>JSON.parse(atob(s.trim()));
+function mkpc(){pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+ me.getTracks().forEach(t=>pc.addTrack(t,me));
+ pc.ontrack=e=>{const s=e.streams[0];if(!remote||s.id==remote.id){remote=s;vid.fr.srcObject=s;vid.fr.play().catch(e=>console.warn(e));$('#a1').srcObject=s}else{vid.scr.srcObject=s;vid.scr.play().catch(e=>console.warn(e));$('#a2').srcObject=s;layout(1)}};
+ pc.onconnectionstatechange=()=>{$('#st').textContent=pc.connectionState;if(pc.connectionState=='connected')$('#pn').classList.remove('open');if(pc.connectionState=='connected')pc.getSenders().forEach(async s=>{if(s.track&&s.track.kind=='video'){const p=s.getParameters();p.encodings=p.encodings&&p.encodings.length?p.encodings:[{}];p.encodings[0].maxBitrate=3e6;try{await s.setParameters(p)}catch{}}})};
+ pc.onnegotiationneeded=async()=>{if(!dc||dc.readyState!='open')return;try{making=true;await pc.setLocalDescription();send({d:pc.localDescription})}finally{making=false}}}
+function wire(c){dc=c;c.onmessage=async e=>{const m=JSON.parse(e.data);
+ if(m.rx)return rx(m.rx,m.x);
+ if(m.off){if(!screenL)vid.scr.srcObject=null;layout(0);return}
+ if(m.d){const clash=m.d.type=='offer'&&(making||pc.signalingState!='stable');if(clash&&isHost)return;
+  await pc.setRemoteDescription(m.d);if(m.d.type=='offer'){await pc.setLocalDescription();send({d:pc.localDescription})}}}}
+$('#host').onclick=async()=>{await cam();isHost=true;mkpc();wire(pc.createDataChannel('x'));await pc.setLocalDescription(await pc.createOffer());await gathered();$('#out').value=enc(pc.localDescription)};
+$('#join').onclick=async()=>{await cam();isHost=false;mkpc();pc.ondatachannel=e=>wire(e.channel);await pc.setRemoteDescription(dec($('#in').value));await pc.setLocalDescription(await pc.createAnswer());await gathered();$('#out').value=enc(pc.localDescription)};
+$('#conn').onclick=()=>pc.setRemoteDescription(dec($('#in').value));
+function stopScr(){const ts=screenL.getTracks();ts.forEach(t=>t.stop());pc&&pc.getSenders().forEach(s=>{if(ts.includes(s.track))pc.removeTrack(s)});screenL=null;vid.scr.srcObject=null;layout(0);send({off:1});$('#scr').classList.remove('on')}
+$('#scr').onclick=async()=>{if(screenL)return stopScr();
+ try{screenL=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:true})}catch(e){return alert('Screen share blocked: '+e.message)}
+ const v=screenL.getVideoTracks()[0];v.contentHint='motion';v.onended=()=>screenL&&stopScr();
+ vid.scr.srcObject=screenL;vid.scr.play().catch(e=>console.warn(e));layout(1);$('#scr').classList.add('on');
+ pc&&screenL.getTracks().forEach(t=>pc.addTrack(t,screenL))};
+function start(s,name){const ch=[],mt='video/webm;codecs=vp9,opus',r=new MediaRecorder(s,{mimeType:MediaRecorder.isTypeSupported(mt)?mt:'video/webm',videoBitsPerSecond:6e6});
+ r.ondataavailable=e=>ch.push(e.data);
+ r.onstop=()=>{const b=new Blob(ch,{type:'video/webm'}),u=URL.createObjectURL(b),d=document.createElement('div');d.className='row';
+  d.innerHTML='<video controls src="'+u+'"></video><b>'+name+'.webm</b>';const bt=document.createElement('button');bt.textContent='Save';
+  bt.onclick=()=>{const l=document.createElement('a');l.href=u;l.download=name+'.webm';document.body.append(l);l.click();l.remove()};d.append(bt);$('#clips').append(d);recs=recs.filter(x=>x!=r);if(!recs.length)$('#rec').classList.remove('on')};
+ recs.push(r);r.start(1000)}
+$('#rec').onclick=()=>{if(recs.length)return recs.slice().forEach(r=>r.stop());
+ const ac=new AudioContext(),dest=ac.createMediaStreamDestination();
+ [me,remote,screenL,vid.scr.srcObject].forEach(s=>{if(s&&s.getAudioTracks().length)ac.createMediaStreamSource(new MediaStream(s.getAudioTracks())).connect(dest)});
+ start(new MediaStream([...cv.captureStream(30).getVideoTracks(),...dest.stream.getAudioTracks()]),'meme-'+Date.now());
+ if($('#raw').checked){me&&start(me,'me-raw-'+Date.now());remote&&start(remote,'friend-raw-'+Date.now())}
+ $('#rec').classList.add('on')};
+
+function go(m){$('#home').hidden=true;$('#room').hidden=false;$('#pn').classList.add('open');if(m=='host')$('#host').click();else $('#in').focus()}
+$('#nw').onclick=()=>go('host');$('#jn').onclick=()=>go('join');
+document.querySelectorAll('[data-pop]').forEach(b=>b.onclick=()=>{const p=$('#'+b.dataset.pop),w=p.classList.contains('open');document.querySelectorAll('.pop').forEach(x=>x.classList.remove('open'));if(!w)p.classList.add('open')});
+$('#lv').onclick=()=>{if(!recs.length||confirm('Recording in progress. Leave anyway?'))location.reload()};
+setInterval(()=>$('#clk').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),1000);
+</script></body></html>
