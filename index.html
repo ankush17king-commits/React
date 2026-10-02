@@ -61,7 +61,11 @@ video{max-width:100%;border-radius:10px}small{color:var(--mut)}
 <div id="pn"><h3>Connect with your friend</h3>
 <ol><li>Host: click <b>Make invite</b> and send your code.</li><li>Friend: paste it below, click <b>Join</b>, send their code back.</li><li>Host: paste the reply, click <b>Connect</b>.</li></ol>
 <div class="row"><button id="host">Make invite</button><button id="join">Join</button><button id="conn">Connect</button></div>
-<small>Paste code here</small><textarea id="in"></textarea><small>Your code</small><textarea id="out" readonly></textarea>
+<small>Paste code here</small><textarea id="in" placeholder="Paste your friend's code here..."></textarea>
+<div style="display:flex; justify-content:space-between; align-items:center;">
+<small>Your code to share</small><button id="copyBtn" style="padding:4px 10px; font-size:12px; border-radius:8px; margin-bottom:4px; background:var(--blue); color:#fff;">📋 Copy</button>
+</div>
+<textarea id="out" readonly placeholder="Click 'Make invite' or 'Join' to generate your code..."></textarea>
 <label><input type="checkbox" id="raw"> Also save raw tracks (me / friend)</label>
 <h3 style="margin-top:16px">Recordings</h3><div id="clips"><small>Finished recordings appear here.</small></div></div>
 <audio id="a1" autoplay></audio><audio id="a2" autoplay></audio>
@@ -141,5 +145,6 @@ function go(m){$('#home').hidden=true;$('#room').hidden=false;$('#pn').classList
 $('#nw').onclick=()=>go('host');$('#jn').onclick=()=>go('join');
 document.querySelectorAll('[data-pop]').forEach(b=>b.onclick=()=>{const p=$('#'+b.dataset.pop),w=p.classList.contains('open');document.querySelectorAll('.pop').forEach(x=>x.classList.remove('open'));if(!w)p.classList.add('open')});
 $('#lv').onclick=()=>{if(!recs.length||confirm('Recording in progress. Leave anyway?'))location.reload()};
+$('#copyBtn').onclick=()=>{const v=$('#out').value;if(!v)return;navigator.clipboard.writeText(v).catch(()=>{$('#out').select();document.execCommand('copy')});const b=$('#copyBtn');b.textContent='✅ Copied!';setTimeout(()=>b.textContent='📋 Copy',2000)};
 setInterval(()=>$('#clk').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),1000);
 </script></body></html>
