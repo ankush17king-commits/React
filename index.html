@@ -108,7 +108,7 @@ function rx(e,x){fl.push({e,x:x||200+Math.random()*880,t:Date.now()})}
 async function cam(){if(me)return;try{me=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},facingMode:"user"},audio:{echoCancellation:true,noiseSuppression:true}});vid.me.srcObject=me;vid.me.play().catch(e=>console.warn(e));$('#cam').classList.remove('off')}catch(e){alert('Camera/mic blocked: '+e.message+'\n\niPhone Users: You cannot use the camera inside WhatsApp or Instagram. Please tap the compass icon to open this link in the Safari browser, and ensure camera permissions are allowed in Settings.');throw e}}
 $('#cam').onclick=()=>{if(!me)return cam();const t=me.getVideoTracks()[0];t.enabled=!t.enabled;$('#cam').classList.toggle('off',!t.enabled)};$('#mic').onclick=()=>{if(!me)return;const t=me.getAudioTracks()[0];t.enabled=!t.enabled;$('#mic').classList.toggle('off',!t.enabled)};
 const gathered=()=>new Promise(r=>{if(pc.iceGatheringState=='complete')return r();pc.onicegatheringstatechange=()=>pc.iceGatheringState=='complete'&&r();setTimeout(r,4000)});
-const enc=d=>btoa(JSON.stringify(d)),dec=s=>JSON.parse(atob(s.trim()));
+const enc=d=>btoa(JSON.stringify(d)),dec=s=>JSON.parse(atob(s.replace(/\s+/g,'')));
 function mkpc(){pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
  me.getTracks().forEach(t=>pc.addTrack(t,me));
  pc.ontrack=e=>{const s=e.streams[0];if(!remote||s.id==remote.id){remote=s;vid.fr.srcObject=s;vid.fr.play().catch(e=>console.warn(e));$('#a1').srcObject=s}else{vid.scr.srcObject=s;vid.scr.play().catch(e=>console.warn(e));$('#a2').srcObject=s;layout(1)}};
@@ -119,9 +119,9 @@ function wire(c){dc=c;c.onmessage=async e=>{const m=JSON.parse(e.data);
  if(m.off){if(!screenL)vid.scr.srcObject=null;layout(0);return}
  if(m.d){const clash=m.d.type=='offer'&&(making||pc.signalingState!='stable');if(clash&&isHost)return;
   await pc.setRemoteDescription(m.d);if(m.d.type=='offer'){await pc.setLocalDescription();send({d:pc.localDescription})}}}}
-$('#host').onclick=async()=>{await cam();isHost=true;mkpc();wire(pc.createDataChannel('x'));await pc.setLocalDescription(await pc.createOffer());await gathered();$('#out').value=enc(pc.localDescription)};
-$('#join').onclick=async()=>{await cam();isHost=false;mkpc();pc.ondatachannel=e=>wire(e.channel);await pc.setRemoteDescription(dec($('#in').value));await pc.setLocalDescription(await pc.createAnswer());await gathered();$('#out').value=enc(pc.localDescription)};
-$('#conn').onclick=()=>pc.setRemoteDescription(dec($('#in').value));
+$('#host').onclick=async()=>{try{await cam();isHost=true;mkpc();wire(pc.createDataChannel('x'));await pc.setLocalDescription(await pc.createOffer());$('#host').textContent='Loading...';await gathered();$('#out').value=enc(pc.localDescription);$('#host').textContent='Make invite';alert("Invite code generated! Copy it and send it to your friend.")}catch(e){alert("Error: "+e.message)}};
+$('#join').onclick=async()=>{if(!$('#in').value.trim())return alert("Paste the host's code first!");try{const d=dec($('#in').value);await cam();isHost=false;mkpc();pc.ondatachannel=e=>wire(e.channel);await pc.setRemoteDescription(d);await pc.setLocalDescription(await pc.createAnswer());$('#join').textContent='Loading...';await gathered();$('#out').value=enc(pc.localDescription);$('#join').textContent='Join';alert("Success! Now COPY your code and send it BACK to the host.")}catch(e){alert("Invalid code pasted! Error: "+e.message)}};
+$('#conn').onclick=()=>{if(!$('#in').value.trim())return alert("Paste your friend's code first!");try{pc.setRemoteDescription(dec($('#in').value))}catch(e){alert("Invalid code! "+e.message)}};
 function stopScr(){const ts=screenL.getTracks();ts.forEach(t=>t.stop());pc&&pc.getSenders().forEach(s=>{if(ts.includes(s.track))pc.removeTrack(s)});screenL=null;vid.scr.srcObject=null;layout(0);send({off:1});$('#scr').classList.remove('on')}
 $('#scr').onclick=async()=>{if(screenL)return stopScr();
  try{screenL=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:true})}catch(e){return alert('Screen share blocked: '+e.message)}
