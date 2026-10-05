@@ -23,8 +23,8 @@ h1{font-size:clamp(36px,5vw,56px);font-weight:700;line-height:1.1;margin:0 0 16p
 .feat div{background:var(--card);border-radius:20px;padding:24px;color:var(--mut);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.05);box-shadow:0 8px 32px rgba(0,0,0,0.2)}
 .feat b{color:var(--fg);display:block;margin-bottom:8px;font-size:16px;font-weight:600}
 #room{height:100dvh;display:flex;flex-direction:column;padding:12px 12px 0}
-#stage{width:min(100%,calc((100dvh - 130px)*16/9));margin:auto;flex:1;display:flex;align-items:center}
-canvas{width:100%;max-height:100%;display:block;border-radius:14px;background:#000;touch-action:none;box-shadow:0 10px 40px rgba(0,0,0,0.6)}
+#stage{width:100%;height:calc(100dvh - 120px);margin:auto;display:flex;align-items:center;justify-content:center;overflow:hidden}
+canvas{max-width:100%;max-height:100%;object-fit:contain;border-radius:14px;background:#000;touch-action:none;box-shadow:0 10px 40px rgba(0,0,0,0.6)}
 #bar{height:84px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(15,23,42,0.6);backdrop-filter:blur(12px);border-radius:24px;margin-bottom:12px;padding:0 24px;border:1px solid rgba(255,255,255,0.05)}
 #bar .l,#bar .r{flex:1;color:var(--mut);display:flex;gap:10px;align-items:center}#bar .r{justify-content:flex-end}
 #bar .c{display:flex;gap:10px;overflow-x:auto;padding:10px 0;scrollbar-width:none;}
@@ -60,7 +60,10 @@ video{max-width:100%;border-radius:10px}small{color:var(--mut)}
 <div class="pop" id="rx"></div>
 <div class="pop" id="fx"><div id="fl" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;width:100%"><small style="width:100%;text-align:center">Click a face first, then pick a filter</small></div>
 <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
-<small>Size</small><input type="range" id="sz" min="120" max="1280" value="600" style="width:100px"><button id="rd">Circle / Rect</button><button id="mir" style="background:var(--blue);color:#fff;">Mirror ↔️</button></div></div>
+<small>Size</small><input type="range" id="sz" min="120" max="1280" value="600" style="width:100px"><button id="rd">Circle / Rect</button><button id="mir" style="background:var(--blue);color:#fff;">Mirror ↔️</button></div>
+<div style="display:flex;align-items:center;gap:8px;margin-top:12px;width:100%;justify-content:center">
+<small>Bg:</small><button id="b_d">Dark</button><button id="b_l">Light</button><button id="b_b">Blue</button><button id="b_g">Grid</button>
+</div></div>
 <div id="pn"><h3>Connect with your friend</h3>
 <ol style="margin-bottom:16px"><li>Host: click <b>Make invite</b> and share your 5-letter code.</li><li>Friend: enter it below and click <b>Join</b>.</li></ol>
 <div class="row"><button id="host" style="width:100%;padding:12px;background:var(--blue);color:#fff">Make invite</button></div>
@@ -79,17 +82,54 @@ video{max-width:100%;border-radius:10px}small{color:var(--mut)}
 const $=s=>document.querySelector(s),cv=$('#cv'),cx=cv.getContext('2d');
 const mk=()=>{const v=document.createElement('video');v.autoplay=v.playsInline=v.muted=true;return v};
 const vid={me:mk(),fr:mk(),scr:mk()};
-let me,remote,screenL,peer,call,dc,isHost=false,sel=null,drag=null,recs=[],fl=[];
+let me,remote,screenL,peer,call,dc,isHost=false,sel=null,drag=null,recs=[],fl=[],bg='dark';
 const T=[{k:'me',n:'Me',x:20,y:150,s:600,f:'none',r:0,m:1},{k:'fr',n:'Friend',x:660,y:150,s:600,f:'none',r:0,m:0}];
 const send=o=>{try{dc&&dc.send(JSON.stringify(o))}catch{}};
-function layout(on){const m=T.find(t=>t.k=='me'),f=T.find(t=>t.k=='fr');
- if(on){Object.assign(m,{x:20,y:480,s:380,r:1});Object.assign(f,{x:880,y:480,s:380,r:1})}
- else{Object.assign(m,{x:20,y:150,s:600,r:0});Object.assign(f,{x:660,y:150,s:600,r:0})}}
+
+function resize() {
+ const isPortrait = window.innerHeight > window.innerWidth;
+ cv.width = isPortrait ? 720 : 1280;
+ cv.height = isPortrait ? 1280 : 720;
+ for(const t of T) {
+  if(t.x > cv.width) t.x = Math.max(0, cv.width - 200);
+  if(t.y > cv.height) t.y = Math.max(0, cv.height - 200);
+ }
+}
+window.addEventListener('resize', resize);
+resize();
+
+function layout(on){
+ const m=T.find(t=>t.k=='me'),f=T.find(t=>t.k=='fr');
+ const port = cv.width < cv.height;
+ if(on){
+  if(port){Object.assign(m,{x:40,y:cv.height-300,s:300,r:1});Object.assign(f,{x:380,y:cv.height-300,s:300,r:1})}
+  else{Object.assign(m,{x:20,y:480,s:380,r:1});Object.assign(f,{x:880,y:480,s:380,r:1})}
+ }else{
+  if(port){Object.assign(m,{x:60,y:60,s:600,r:0});Object.assign(f,{x:60,y:660,s:600,r:0})}
+  else{Object.assign(m,{x:20,y:150,s:600,r:0});Object.assign(f,{x:660,y:150,s:600,r:0})}
+ }
+}
+
 function cover(v,x,y,w,h){const vw=v.videoWidth,vh=v.videoHeight;if(!vw){cx.fillStyle='#3c4043';cx.fillRect(x,y,w,h);return}
  const k=Math.max(w/vw,h/vh),sw=w/k,sh=h/k;cx.drawImage(v,(vw-sw)/2,(vh-sh)/2,sw,sh,x,y,w,h)}
+
 function draw(){
- cx.filter='none';cx.fillStyle='#202124';cx.fillRect(0,0,1280,720);
- const s=vid.scr;if(s.srcObject&&s.videoWidth){const k=Math.min(1280/s.videoWidth,720/s.videoHeight),w=s.videoWidth*k,h=s.videoHeight*k;cx.drawImage(s,(1280-w)/2,(720-h)/2,w,h)}
+ cx.filter='none';
+ if(bg==='dark'){cx.fillStyle='#202124';cx.fillRect(0,0,cv.width,cv.height);}
+ else if(bg==='light'){cx.fillStyle='#ffffff';cx.fillRect(0,0,cv.width,cv.height);}
+ else if(bg==='blue'){cx.fillStyle='#0f172a';cx.fillRect(0,0,cv.width,cv.height);}
+ else if(bg==='grid'){
+  cx.fillStyle='#000';cx.fillRect(0,0,cv.width,cv.height);
+  cx.strokeStyle='#333';cx.lineWidth=1;
+  for(let i=0;i<cv.width;i+=40){cx.beginPath();cx.moveTo(i,0);cx.lineTo(i,cv.height);cx.stroke();}
+  for(let i=0;i<cv.height;i+=40){cx.beginPath();cx.moveTo(0,i);cx.lineTo(cv.width,i);cx.stroke();}
+ }
+ 
+ const s=vid.scr;if(s.srcObject&&s.videoWidth){
+  const k=Math.min(cv.width/s.videoWidth, cv.height/s.videoHeight);
+  const w=s.videoWidth*k, h=s.videoHeight*k;
+  cx.drawImage(s,(cv.width-w)/2,(cv.height-h)/2,w,h)
+ }
  for(const t of T){
   const vw=vid[t.k].videoWidth, vh=vid[t.k].videoHeight;
   const aspect = (vw&&vh) ? vw/vh : 16/9;
@@ -103,9 +143,10 @@ function draw(){
   if(t===sel&&!recs.length){cx.strokeStyle='#8ab4f8';cx.lineWidth=4;cx.beginPath();t.r?cx.arc(t.x+t.s/2,t.y+h/2,h/2,0,7):cx.roundRect(t.x,t.y,t.s,h,16);cx.stroke()}
  }
  const now=Date.now();fl=fl.filter(o=>now-o.t<2500);cx.font='90px serif';cx.textAlign='center';
- for(const o of fl){const p=(now-o.t)/2500;cx.globalAlpha=1-p*p;cx.fillText(o.e,o.x,700-p*560)}cx.globalAlpha=1}
+ for(const o of fl){const p=(now-o.t)/2500;cx.globalAlpha=1-p*p;cx.fillText(o.e,o.x,cv.height-20-p*560)}cx.globalAlpha=1}
 setInterval(draw,33);
-const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*1280/r.width,(e.clientY-r.top)*720/r.height]};
+
+const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
 const hit=(x,y)=>[...T].reverse().find(t=>{const vw=vid[t.k].videoWidth,vh=vid[t.k].videoHeight,a=(vw&&vh)?vw/vh:16/9,h=t.s/a;return t.r?Math.hypot(x-t.x-t.s/2,y-t.y-h/2)<h/2:x>t.x&&x<t.x+t.s&&y>t.y&&y<t.y+h});
 cv.onpointerdown=e=>{const[x,y]=pt(e),t=hit(x,y);sel=t||null;if(t){drag=[x-t.x,y-t.y];T.push(T.splice(T.indexOf(t),1)[0]);cv.setPointerCapture(e.pointerId);$('#sz').value=t.s}};
 cv.onpointermove=e=>{if(drag&&sel){const[x,y]=pt(e);sel.x=x-drag[0];sel.y=y-drag[1]}};
@@ -114,12 +155,17 @@ cv.onwheel=e=>{if(sel){e.preventDefault();sel.s=Math.max(120,Math.min(1280,sel.s
 $('#sz').oninput=e=>{if(sel)sel.s=+e.target.value};
 $('#rd').onclick=()=>{if(sel)sel.r^=1};
 $('#mir').onclick=()=>{if(sel)sel.m^=1};
+
+$('#b_d').onclick=()=>bg='dark';$('#b_l').onclick=()=>bg='light';$('#b_b').onclick=()=>bg='blue';$('#b_g').onclick=()=>bg='grid';
+
 [['None','none'],['Blur','blur(10px)'],['Invert','invert(1)'],['B&W','grayscale(1)'],['Sepia','sepia(1)'],['Trippy','hue-rotate(90deg) saturate(2)'],['Deep fry','contrast(1.8) saturate(3)']].forEach(([n,f])=>{
  const b=document.createElement('button');b.textContent=n;b.onclick=()=>{const t=sel||T.find(t=>t.k=='me');t.f=f};$('#fl').append(b)});
-function rx(e,x){fl.push({e,x:x||200+Math.random()*880,t:Date.now()})}
-['😂','💀','🔥','😱','👏','🤡','😭','🤨'].forEach(e=>{const b=document.createElement('button');b.textContent=e;b.onclick=()=>{const x=200+Math.random()*880;rx(e,x);send({rx:e,x})};$('#rx').append(b)});
-async function cam(){if(me)return;try{me=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1920},height:{ideal:1080},facingMode:"user"},audio:{echoCancellation:true,noiseSuppression:true}});vid.me.srcObject=me;vid.me.play().catch(e=>{});$('#cam').classList.remove('off')}catch(e){alert('Camera/mic blocked: '+e.message+'\n\nEnsure camera permissions are allowed.');throw e}}
+function rx(e,x){fl.push({e,x:x||200+Math.random()*(cv.width-400),t:Date.now()})}
+['😂','💀','🔥','😱','👏','🤡','😭','🤨'].forEach(e=>{const b=document.createElement('button');b.textContent=e;b.onclick=()=>{const x=200+Math.random()*(cv.width-400);rx(e,x);send({rx:e,x})};$('#rx').append(b)});
+
+async function cam(){if(me)return;try{me=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:{echoCancellation:true,noiseSuppression:true}});vid.me.srcObject=me;vid.me.play().catch(e=>{});$('#cam').classList.remove('off')}catch(e){alert('Camera/mic blocked: '+e.message+'\n\nEnsure permissions are allowed.');throw e}}
 $('#cam').onclick=()=>{if(!me)return cam();const t=me.getVideoTracks()[0];t.enabled=!t.enabled;$('#cam').classList.toggle('off',!t.enabled)};$('#mic').onclick=()=>{if(!me)return;const t=me.getAudioTracks()[0];t.enabled=!t.enabled;$('#mic').classList.toggle('off',!t.enabled)};
+
 function wire(c){dc=c;c.on('data',data=>{const m=JSON.parse(data);if(m.rx)return rx(m.rx,m.x);if(m.off){if(!screenL)vid.scr.srcObject=null;layout(0);return}})}
 function setupPeer(p){
  peer=p;
@@ -138,6 +184,7 @@ function setupPeer(p){
 $('#host').onclick=async()=>{try{await cam();isHost=true;$('#host').textContent='Loading...';const id='ROOM-'+Math.random().toString(36).substr(2,4).toUpperCase();setupPeer(new Peer(id));peer.on('open',()=>{
  $('#out').value=id;$('#host').textContent='Make invite';$('#st').textContent='waiting...';alert("Invite code generated! Send it to your friend.");});peer.on('error',e=>alert(e))}catch(e){alert("Error: "+e.message)}};
 $('#join').onclick=async()=>{const id=$('#in').value.trim().toUpperCase();if(!id)return alert("Enter the host's code first!");try{await cam();isHost=false;$('#join').textContent='Loading...';setupPeer(new Peer());peer.on('open',()=>{call=peer.call(id,me);call.on('stream',s=>{remote=s;vid.fr.srcObject=s;vid.fr.play().catch(e=>{});$('#a1').srcObject=s});wire(peer.connect(id));$('#join').textContent='Join with Code';$('#pn').classList.remove('open');$('#st').textContent='connected';alert("Success! Connected.");});peer.on('error',e=>alert(e))}catch(e){alert("Error: "+e.message)}};
+
 function stopScr(){const ts=screenL.getTracks();ts.forEach(t=>t.stop());screenL=null;vid.scr.srcObject=null;layout(0);send({off:1});$('#scr').classList.remove('on')}
 $('#scr').onclick=async()=>{if(screenL)return stopScr();
  try{screenL=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:true})}catch(e){return alert('Screen share blocked: '+e.message)}
@@ -145,6 +192,7 @@ $('#scr').onclick=async()=>{if(screenL)return stopScr();
  vid.scr.srcObject=screenL;vid.scr.play().catch(e=>console.warn(e));layout(1);$('#scr').classList.add('on');
  if(peer&&call) peer.call(call.peer, screenL);
 };
+
 function start(s,name){const ch=[],mt='video/webm;codecs=vp9,opus',r=new MediaRecorder(s,{mimeType:MediaRecorder.isTypeSupported(mt)?mt:'video/webm',videoBitsPerSecond:6e6});
  r.ondataavailable=e=>ch.push(e.data);
  r.onstop=()=>{const b=new Blob(ch,{type:'video/webm'}),u=URL.createObjectURL(b),d=document.createElement('div');d.className='row';
@@ -157,7 +205,8 @@ $('#rec').onclick=()=>{if(recs.length)return recs.slice().forEach(r=>r.stop());
  start(new MediaStream([...cv.captureStream(30).getVideoTracks(),...dest.stream.getAudioTracks()]),'meme-'+Date.now());
  if($('#raw').checked){me&&start(me,'me-raw-'+Date.now());remote&&start(remote,'friend-raw-'+Date.now())}
  $('#rec').classList.add('on')};
-function go(m){$('#home').hidden=true;$('#room').hidden=false;$('#pn').classList.add('open');if(m=='host')$('#host').click();else $('#in').focus()}
+
+function go(m){$('#home').hidden=true;$('#room').hidden=false;$('#pn').classList.add('open');layout(0);if(m=='host')$('#host').click();else $('#in').focus()}
 $('#nw').onclick=()=>go('host');$('#jn').onclick=()=>go('join');
 document.querySelectorAll('[data-pop]').forEach(b=>b.onclick=()=>{const p=$('#'+b.dataset.pop),w=p.classList.contains('open');document.querySelectorAll('.pop').forEach(x=>x.classList.remove('open'));if(!w)p.classList.add('open')});
 $('#lv').onclick=()=>{if(!recs.length||confirm('Recording in progress. Leave anyway?'))location.reload()};
