@@ -80,8 +80,9 @@ video{max-width:100%;border-radius:10px}small{color:var(--mut)}
 </div>
 <script>
 const $=s=>document.querySelector(s),cv=$('#cv'),cx=cv.getContext('2d');
-const mk=()=>{const v=document.createElement('video');v.autoplay=v.playsInline=v.muted=true;return v};
+const mk=()=>{const v=document.createElement('video');v.autoplay=v.playsInline=v.muted=true;v.style.display='none';return v};
 const vid={me:mk(),fr:mk(),scr:mk()};
+document.addEventListener('DOMContentLoaded', () => document.body.append(vid.me, vid.fr, vid.scr));
 let me,remote,screenL,peer,call,dc,isHost=false,sel=null,drag=null,recs=[],fl=[],bg='dark',lw=1280,lh=720;
 const T=[{k:'me',n:'Me',x:20,y:150,s:600,f:'none',r:0,m:1},{k:'fr',n:'Friend',x:660,y:150,s:600,f:'none',r:0,m:0}];
 const send=o=>{try{dc&&dc.send(JSON.stringify(o))}catch{}};
@@ -147,8 +148,10 @@ function draw(){
   if(t===sel&&!recs.length){cx.strokeStyle='#8ab4f8';cx.lineWidth=4;cx.beginPath();t.r?cx.arc(t.x+t.s/2,t.y+h/2,h/2,0,7):cx.roundRect(t.x,t.y,t.s,h,16);cx.stroke()}
  }
  const now=Date.now();fl=fl.filter(o=>now-o.t<2500);cx.font='90px serif';cx.textAlign='center';
- for(const o of fl){const p=(now-o.t)/2500;cx.globalAlpha=1-p*p;cx.fillText(o.e,o.x,lh-20-p*560)}cx.globalAlpha=1}
-setInterval(draw,33);
+ for(const o of fl){const p=(now-o.t)/2500;cx.globalAlpha=1-p*p;cx.fillText(o.e,o.x,lh-20-p*560)}cx.globalAlpha=1;
+ requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
 
 const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*lw/r.width,(e.clientY-r.top)*lh/r.height]};
 const hit=(x,y)=>[...T].reverse().find(t=>{const vw=vid[t.k].videoWidth,vh=vid[t.k].videoHeight,a=(vw&&vh)?vw/vh:16/9,h=t.s/a;return t.r?Math.hypot(x-t.x-t.s/2,y-t.y-h/2)<h/2:x>t.x&&x<t.x+t.s&&y>t.y&&y<t.y+h});
